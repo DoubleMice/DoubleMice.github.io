@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>git凭证存储 | DoubleMice</title>
+<meta name="generator" content="Jekyll v3.7.3" />
+<meta property="og:title" content="git凭证存储" />
+<meta name="author" content="DoubleMice" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="23333 git使用http协议传输时每次需要输入用户名密码，我又比较懒，刚好zzz同学发了个解决方法，抽空深入了解了一下。 TripleZ&#39;s blog 解决方法 git 配置 (gitcredentials) gitcredentials - providing usernames and passwords to Git DOC git 凭证存储策略 默认不存储&lt;/p&gt; &quot;cache&quot;模式 命令git config --global credential.helper cache默认存储15分钟&lt;/p&gt; 自定义存储时间git config credential.helper &#39;cache --timeout=3600&#39; &quot;store&quot;模式 凭证长期但以明文存储在home目录 Mac git的&quot;osxkeychain&quot;模式 凭证长期且解密存储在磁盘上 windows &quot;winstore&quot;工具 与Mac上类似，长期且加密存储 用法 git 的配置选项 git config --global credential.helper [cache --timeout=3600|store --file=/.../example/filename|osxkeychain] 括号中其中一个模式 .gitconfig文件 [credential] helper = store --file /.../example/filename helper = cache --timeout 36000 ... git 按配置文件中的顺序搜索直至找到可用凭证 示例 $ git config credential.helper store $ git push http://example.com/repo.git Username: Password:" />
+<meta property="og:description" content="23333 git使用http协议传输时每次需要输入用户名密码，我又比较懒，刚好zzz同学发了个解决方法，抽空深入了解了一下。 TripleZ&#39;s blog 解决方法 git 配置 (gitcredentials) gitcredentials - providing usernames and passwords to Git DOC git 凭证存储策略 默认不存储&lt;/p&gt; &quot;cache&quot;模式 命令git config --global credential.helper cache默认存储15分钟&lt;/p&gt; 自定义存储时间git config credential.helper &#39;cache --timeout=3600&#39; &quot;store&quot;模式 凭证长期但以明文存储在home目录 Mac git的&quot;osxkeychain&quot;模式 凭证长期且解密存储在磁盘上 windows &quot;winstore&quot;工具 与Mac上类似，长期且加密存储 用法 git 的配置选项 git config --global credential.helper [cache --timeout=3600|store --file=/.../example/filename|osxkeychain] 括号中其中一个模式 .gitconfig文件 [credential] helper = store --file /.../example/filename helper = cache --timeout 36000 ... git 按配置文件中的顺序搜索直至找到可用凭证 示例 $ git config credential.helper store $ git push http://example.com/repo.git Username: Password:" />
+<link rel="canonical" href="http://localhost:4000/%E5%BC%80%E5%8F%91/2017/09/06/git-e5-87-ad-e8-af-81-e5-ad-98-e5-82-a8.html" />
+<meta property="og:url" content="http://localhost:4000/%E5%BC%80%E5%8F%91/2017/09/06/git-e5-87-ad-e8-af-81-e5-ad-98-e5-82-a8.html" />
+<meta property="og:site_name" content="DoubleMice" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2017-09-06T19:39:26+08:00" />
+<script type="application/ld+json">
+{"description":"23333 git使用http协议传输时每次需要输入用户名密码，我又比较懒，刚好zzz同学发了个解决方法，抽空深入了解了一下。 TripleZ&#39;s blog 解决方法 git 配置 (gitcredentials) gitcredentials - providing usernames and passwords to Git DOC git 凭证存储策略 默认不存储&lt;/p&gt; &quot;cache&quot;模式 命令git config --global credential.helper cache默认存储15分钟&lt;/p&gt; 自定义存储时间git config credential.helper &#39;cache --timeout=3600&#39; &quot;store&quot;模式 凭证长期但以明文存储在home目录 Mac git的&quot;osxkeychain&quot;模式 凭证长期且解密存储在磁盘上 windows &quot;winstore&quot;工具 与Mac上类似，长期且加密存储 用法 git 的配置选项 git config --global credential.helper [cache --timeout=3600|store --file=/.../example/filename|osxkeychain] 括号中其中一个模式 .gitconfig文件 [credential] helper = store --file /.../example/filename helper = cache --timeout 36000 ... git 按配置文件中的顺序搜索直至找到可用凭证 示例 $ git config credential.helper store $ git push http://example.com/repo.git Username: Password:","author":{"@type":"Person","name":"DoubleMice"},"@type":"BlogPosting","url":"http://localhost:4000/%E5%BC%80%E5%8F%91/2017/09/06/git-e5-87-ad-e8-af-81-e5-ad-98-e5-82-a8.html","headline":"git凭证存储","dateModified":"2017-09-06T19:39:26+08:00","datePublished":"2017-09-06T19:39:26+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/%E5%BC%80%E5%8F%91/2017/09/06/git-e5-87-ad-e8-af-81-e5-ad-98-e5-82-a8.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="DoubleMice" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">DoubleMice</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/aboutme.html">AboutMe</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">git凭证存储</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2017-09-06T19:39:26+08:00" itemprop="datePublished">Sep 6, 2017
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">DoubleMice</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3>23333</h3>
+<p>git使用http协议传输时每次需要输入用户名密码，我又比较懒，刚好zzz同学发了个解决方法，抽空深入了解了一下。</p>
+<p><a href="https://blog.triplez.cn/index.php/2017/08/31/config-git-credential-for-no-more-needs-to-login/">TripleZ's blog</a></p>
+<h3>解决方法</h3>
+<h4>git 配置 (gitcredentials)</h4>
+<ul>
+<li>gitcredentials - providing usernames and passwords to Git
+<p><a href="https://git-scm.com/docs/gitcredentials">DOC</a></p>
+</li>
+<li>
+<p>git 凭证存储策略</p>
+<ul>
+<li>默认不存储</p>
+</li>
+<li>
+<p>"cache"模式</p>
+<ul>
+<li>命令<code>git config --global credential.helper cache</code>默认存储15分钟</p>
+</li>
+<li>
+<p>自定义存储时间<code>git config credential.helper 'cache --timeout=3600'</code></p>
+</li>
+</ul>
+</li>
+<li>
+<p>"store"模式</p>
+<ul>
+<li>凭证长期但以明文存储在home目录</li>
+</ul>
+</li>
+<li>Mac git的"osxkeychain"模式
+<ul>
+<li>凭证长期且解密存储在磁盘上</li>
+</ul>
+</li>
+<li>windows "winstore"工具
+<ul>
+<li>与Mac上类似，长期且加密存储</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>用法
+<ul>
+<li>git 的配置选项
+<ol>
+<li><code>git config --global credential.helper [cache --timeout=3600|store --file=/.../example/filename|osxkeychain]</code><br />
+括号中其中一个模式</li>
+<li>.gitconfig文件<br />
+<code>[credential]<br />
+helper = store --file /.../example/filename<br />
+helper = cache --timeout 36000<br />
+...</code><br />
+git 按配置文件中的顺序搜索直至找到可用凭证</li>
+</ol>
+</li>
+</ul>
+</li>
+<li>示例
+<pre><code>$ git config credential.helper store
+$ git push http://example.com/repo.git
+Username: <type your username>
+Password: <type your password>
+
+[several days later]
+$ git push http://example.com/repo.git
+[your credentials are used automatically]
+</code></pre>
+</li>
+</ul>
+<h4>git credential</h4>
+<ul>
+<li>git-credential - Retrieve and store user credentials
+<p><code>git config --global credential.helper</code>  配置credential时修改了git credential 的配置文件</p>
+<p><a href="https://git-scm.com/docs/gitcredentials">git credentials文档</a></p>
+</li>
+<li>
+<p>与 git 相互独立的 git credential 工具</p>
+<pre><code>git credential [fill|approve|reject]
+</code></pre>
+</li>
+<li>I/O format
+<ul>
+<li><code>protocol</code> (e.g.,https)</p>
+</li>
+<li>
+<p><code>host</code> remote hostname</p>
+</li>
+<li>
+<p><code>path</code> repository's path on the server</p>
+</li>
+<li>
+<p><code>username</code> credential's username (e.g.,github username)</p>
+</li>
+<li>
+<p><code>password</code> credential's password (e.g.,github password)</p>
+</li>
+<li>
+<p><code>url</code> could included almost all attribute.</p>
+<ul>
+<li>eg:<code>url=https://username@example.com</code> will be parsed as <code>protocol=https</code> , <code>username=username</code> , <code>host=example.com</code></p>
+</li>
+<li>
+<p>WARN:if define "url" at last,the above attributes could be rewrite</p>
+<pre><code>protocol=http
+host=aaa.com
+username=foxwest
+url=https://403forbidden.website
+</code></pre>
+<p>the config would be parsed as</p>
+<pre><code>protocol=https
+username=NULL(empty)
+host=403forbidden.website
+</code></pre>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h4>git credential-manager (GCM on windows)</h4>
+<ul>
+<li><a href="https://github.com/Microsoft/Git-Credential-Manager-for-Windows/blob/master/Docs/CredentialManager.md">DOC</a></li>
+</ul>
+<h4>关于自定义凭证存储命令</h4>
+<ul>
+<li>见 <a href="https://git-scm.com/book/zh/v2/Git-%E5%B7%A5%E5%85%B7-%E5%87%AD%E8%AF%81%E5%AD%98%E5%82%A8">git credential</a> 文档</li>
+</ul>
+
+  </div><a class="u-url" href="/%E5%BC%80%E5%8F%91/2017/09/06/git-e5-87-ad-e8-af-81-e5-ad-98-e5-82-a8.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">DoubleMice</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">DoubleMice</li><li><a class="u-email" href="mailto:foxwest@qq.com">foxwest@qq.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/DoubleMice"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">DoubleMice</span></a></li><li><a href="https://www.twitter.com/__Socrates"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">__Socrates</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

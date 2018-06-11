@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>一个考勤系统的开发笔记 | DoubleMice</title>
+<meta name="generator" content="Jekyll v3.7.3" />
+<meta property="og:title" content="一个考勤系统的开发笔记" />
+<meta name="author" content="DoubleMice" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="DutySystem 开发周期7月20号到8月1号，8月20号到8月25号左右 A duty system for xxxxxxx. Initialize MySQL authentication Model 3.1. Model Relationship Controller Middleware API Database tables 7.1. table name: employees 7.2. table names: records 7.3. table name: users 7.4. table name: user_action_records Migrations Seeds Employee Status Important Timestamp 11.1. Default Timezone Scheduling task note 13.1. Error message: 13.2. Solution 13.3. Change Server Timezone Source Code rewrite 14.1. modal position 14.2. positionmethod Web-view Layouts Design 15.1. general page 15.2. graph page 15.3. valid records 15.4. holiday page(option) 15.5. timeedit page Runtime Enviornment 运行环境 Enviornment Version Laravel 5.4 PHP 7.0.10 MySQL 5.7.17 Nginx 1.11.9 1. Initialize 系统初始化 php artisan key:generate php artisan make:auth php artisan migrate 2. MySQL authentication account: ** password: ** remote database: IP: **.**.**.**:** Account: ** Password: ** Service Logic 业务逻辑 3. Model 模型 User Employee Record (For employees) ActionRecord (For admins) CarRecord CardRecord TimeNode DailyCheckStatus HolidayDate AbsenceValidRecord 3.1. Model Relationship 模型间关系 $user-&gt;actions; // 返回某个指定管理员操作记录 $actions-&gt;user; // 返回某条指定记录的管理员信息" />
+<meta property="og:description" content="DutySystem 开发周期7月20号到8月1号，8月20号到8月25号左右 A duty system for xxxxxxx. Initialize MySQL authentication Model 3.1. Model Relationship Controller Middleware API Database tables 7.1. table name: employees 7.2. table names: records 7.3. table name: users 7.4. table name: user_action_records Migrations Seeds Employee Status Important Timestamp 11.1. Default Timezone Scheduling task note 13.1. Error message: 13.2. Solution 13.3. Change Server Timezone Source Code rewrite 14.1. modal position 14.2. positionmethod Web-view Layouts Design 15.1. general page 15.2. graph page 15.3. valid records 15.4. holiday page(option) 15.5. timeedit page Runtime Enviornment 运行环境 Enviornment Version Laravel 5.4 PHP 7.0.10 MySQL 5.7.17 Nginx 1.11.9 1. Initialize 系统初始化 php artisan key:generate php artisan make:auth php artisan migrate 2. MySQL authentication account: ** password: ** remote database: IP: **.**.**.**:** Account: ** Password: ** Service Logic 业务逻辑 3. Model 模型 User Employee Record (For employees) ActionRecord (For admins) CarRecord CardRecord TimeNode DailyCheckStatus HolidayDate AbsenceValidRecord 3.1. Model Relationship 模型间关系 $user-&gt;actions; // 返回某个指定管理员操作记录 $actions-&gt;user; // 返回某条指定记录的管理员信息" />
+<link rel="canonical" href="http://localhost:4000/%E5%BC%80%E5%8F%91/2018/01/23/dutysystem.html" />
+<meta property="og:url" content="http://localhost:4000/%E5%BC%80%E5%8F%91/2018/01/23/dutysystem.html" />
+<meta property="og:site_name" content="DoubleMice" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-01-23T19:40:08+08:00" />
+<script type="application/ld+json">
+{"description":"DutySystem 开发周期7月20号到8月1号，8月20号到8月25号左右 A duty system for xxxxxxx. Initialize MySQL authentication Model 3.1. Model Relationship Controller Middleware API Database tables 7.1. table name: employees 7.2. table names: records 7.3. table name: users 7.4. table name: user_action_records Migrations Seeds Employee Status Important Timestamp 11.1. Default Timezone Scheduling task note 13.1. Error message: 13.2. Solution 13.3. Change Server Timezone Source Code rewrite 14.1. modal position 14.2. positionmethod Web-view Layouts Design 15.1. general page 15.2. graph page 15.3. valid records 15.4. holiday page(option) 15.5. timeedit page Runtime Enviornment 运行环境 Enviornment Version Laravel 5.4 PHP 7.0.10 MySQL 5.7.17 Nginx 1.11.9 1. Initialize 系统初始化 php artisan key:generate php artisan make:auth php artisan migrate 2. MySQL authentication account: ** password: ** remote database: IP: **.**.**.**:** Account: ** Password: ** Service Logic 业务逻辑 3. Model 模型 User Employee Record (For employees) ActionRecord (For admins) CarRecord CardRecord TimeNode DailyCheckStatus HolidayDate AbsenceValidRecord 3.1. Model Relationship 模型间关系 $user-&gt;actions; // 返回某个指定管理员操作记录 $actions-&gt;user; // 返回某条指定记录的管理员信息","author":{"@type":"Person","name":"DoubleMice"},"@type":"BlogPosting","url":"http://localhost:4000/%E5%BC%80%E5%8F%91/2018/01/23/dutysystem.html","headline":"一个考勤系统的开发笔记","dateModified":"2018-01-23T19:40:08+08:00","datePublished":"2018-01-23T19:40:08+08:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/%E5%BC%80%E5%8F%91/2018/01/23/dutysystem.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="DoubleMice" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">DoubleMice</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/aboutme.html">AboutMe</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">一个考勤系统的开发笔记</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2018-01-23T19:40:08+08:00" itemprop="datePublished">Jan 23, 2018
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">DoubleMice</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h1>DutySystem</h1>
+<p>开发周期7月20号到8月1号，8月20号到8月25号左右</p>
+<p>A duty system for xxxxxxx.</p>
+<p><!-- vscode-markdown-toc --></p>
+<ul>
+<li>
+<ol>
+<li><a href="#Initialize">Initialize</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#MySQLauthentication">MySQL authentication</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#Model">Model</a></li>
+</ol>
+<ul>
+<li>3.1. <a href="#ModelRelationship">Model Relationship</a></li>
+</ul>
+</li>
+<li>
+<ol>
+<li><a href="#Controller">Controller</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#Middleware">Middleware</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#API">API</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#Databasetables">Database tables</a></li>
+</ol>
+<ul>
+<li>7.1. <a href="#tablename:employees">table name: <code>employees</code></a></li>
+<li>7.2. <a href="#tablenames:records">table names: <code>records</code></a></li>
+<li>7.3. <a href="#tablename:users">table name: <code>users</code></a></li>
+<li>7.4. <a href="#tablename:user_action_records">table name: <code>user_action_records</code></a></li>
+</ul>
+</li>
+<li>
+<ol>
+<li><a href="#Migrations">Migrations</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#Seeds">Seeds</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#EmployeeStatus">Employee Status</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#ImportantTimestamp">Important Timestamp</a></li>
+</ol>
+<ul>
+<li>11.1. <a href="#DefaultTimezone">Default Timezone</a></li>
+</ul>
+</li>
+<li>
+<ol>
+<li><a href="#Schedulingtask">Scheduling task</a></li>
+</ol>
+</li>
+<li>
+<ol>
+<li><a href="#note">note</a></li>
+</ol>
+<ul>
+<li>13.1. <a href="#Errormessage:">Error message:</a></li>
+<li>13.2. <a href="#Solution">Solution</a></li>
+<li>13.3. <a href="#ChangeServerTimezone">Change Server Timezone</a></li>
+</ul>
+</li>
+<li>
+<ol>
+<li><a href="#SourceCoderewrite">Source Code rewrite</a></li>
+</ol>
+<ul>
+<li>14.1. <a href="#modalposition">modal position</a></li>
+<li>14.2. <a href="#positionmethod">positionmethod</a></li>
+</ul>
+</li>
+<li>
+<ol>
+<li><a href="#Web-viewLayoutsDesign">Web-view Layouts Design</a></li>
+</ol>
+<ul>
+<li>15.1. <a href="#generalpage">general page</a></li>
+<li>15.2. <a href="#graphpage">graph page</a></li>
+<li>15.3. <a href="#validrecords">valid records</a></li>
+<li>15.4. <a href="#holidaypageoption">holiday page(option)</a></li>
+<li>15.5. <a href="#timeeditpage">timeedit page</a></li>
+</ul>
+</li>
+</ul>
+<p><!-- vscode-markdown-toc-config<br />
+    numbering=true<br />
+    autoSave=true<br />
+    /vscode-markdown-toc-config --><br />
+<!-- /vscode-markdown-toc --></p>
+<h1>Runtime Enviornment</h1>
+<p>运行环境</p>
+<table>
+<thead>
+<tr>
+<th align="center">Enviornment</th>
+<th align="center">Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Laravel</td>
+<td align="center">5.4</td>
+</tr>
+<tr>
+<td align="center">PHP</td>
+<td align="center">7.0.10</td>
+</tr>
+<tr>
+<td align="center">MySQL</td>
+<td align="center">5.7.17</td>
+</tr>
+<tr>
+<td align="center">Nginx</td>
+<td align="center">1.11.9</td>
+</tr>
+</tbody>
+</table>
+<h2>1. <a name='Initialize'></a>Initialize</h2>
+<p>系统初始化</p>
+<pre><code>php artisan key:generate
+php artisan make:auth
+php artisan migrate
+</code></pre>
+<h2>2. <a name='MySQLauthentication'></a>MySQL authentication</h2>
+<blockquote><p>
+  account: <code>**</code></p>
+<p>  password: <code>**</code>
+</p></blockquote>
+<p>remote database:</p>
+<ul>
+<li>IP: <code>**.**.**.**:**</code></li>
+<li>Account: <code>**</code></li>
+<li>Password: <code>**</code></li>
+</ul>
+<h1>Service Logic</h1>
+<p>业务逻辑</p>
+<h2>3. <a name='Model'></a>Model</h2>
+<p>模型</p>
+<ul>
+<li>User</li>
+<li>Employee</li>
+<li>Record (For employees)</li>
+<li>ActionRecord (For admins)</li>
+<li>CarRecord</li>
+<li>CardRecord</li>
+<li>TimeNode</li>
+<li>DailyCheckStatus</li>
+<li>HolidayDate</li>
+<li>AbsenceValidRecord</li>
+</ul>
+<h3>3.1. <a name='ModelRelationship'></a>Model Relationship</h3>
+<p>模型间关系</p>
+<pre><code class="php">$user->actions; // 返回某个指定管理员操作记录
+$actions->user; // 返回某条指定记录的管理员信息
+
+$employee->records; // 返回某个指定雇员的签到记录
+$employee->special_records(); // 以数组返回某个指定雇员的重要签到记录
+$employee->month_report_data(); // 以数组返回某个指定雇员的月记录数据
+
+$record->employee; // 返回某条指定签到记录的雇员信息
+
+$absenceValidRecord->employee;// 返回某条指定请假记录的雇员信息
+</code></pre>
+<h2>4. <a name='Controller'></a>Controller</h2>
+<p>控制器</p>
+<ul>
+<li>Controller</li>
+<li>IndexController</li>
+<li>HomeController</li>
+<li>RouteController</li>
+<li>EmployeeController</li>
+<li>RecordController</li>
+<li>TimeNodeController</li>
+<li>ActionRecordController</li>
+<li>AbsenceValidRecordController</p>
+</li>
+<li>
+<p>Auth</p>
+<ul>
+<li>RegisterController</li>
+<li>LoginController</li>
+<li>ForgetPasswordController</li>
+<li>ResetPasswordController</li>
+</ul>
+</li>
+</ul>
+<h2>5. <a name='Middleware'></a>Middleware</h2>
+<p>中间件</p>
+<ul>
+<li>EncryptCookies</li>
+<li>RedirectIfAuthenticated</li>
+<li>TrimStrings</li>
+<li>VerifyCsrfToken</li>
+</ul>
+<h2>Listener</h2>
+<p>监听器</p>
+<h2>6. <a name='API'></a>API</h2>
+<p>应用程序接口</p>
+<ul>
+<li>GET <code>/</code> : 返回所有记录界面</li>
+<li>POST <code>/</code> : 返回指定日期内记录界面<br />
+<blockquote><p>
+  请求变量:</p>
+<pre><code class="php">$start_time // 开始时间
+$end_time // 结束时间
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/home</code> : 返回普通管理员登录界面</p>
+</li>
+<li>GET <code>/superhome</code> : 返回超级管理员登录界面<br />
+<!-- - GET <code>/graph</code> : 返回图表界面</li>
+<li>GET <code>/correct</code> : 返回数据修正界面</li>
+<li>GET <code>/export</code> : 返回导出excel界面 --></li>
+<li>GET <code>/valid</code> : 返回当日出勤情况界面</li>
+<li>
+<p>POST <code>/valid</code> : 返回指定某个日期的出勤情况界面</p>
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$date // 请求日期
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/report</code> : 返回月报表界面</p>
+</li>
+<li>
+<p>POST <code>/report</code> : 返回某个指定月份的月报表界面</p>
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$month // 格式为 "YYYY-MM" 的某个指定月份
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/holidays</code> : 返回假期日历界面</p>
+</li>
+<li>
+<p>GET <code>/holidays/dates</code> : 请求当前<strong>年</strong>的假期信息</p>
+<blockquote><p>
+  返回 <code>JSON</code> 数据：</p>
+<pre><code class="json">{
+    "year": "2017",
+    "dates": [
+        { "date": "2017-08-01" },
+        { "date": "2017-08-02" },
+        { "date": "2017-08-03" },
+        { "date": "2017-08-04" },
+        { "date": "2017-08-05" },
+        { "date": "2017-08-06" }
+    ]
+}
+</code></pre>
+</blockquote>
+</li>
+<li>POST <code>/holidays</code> : 请求指定<strong>月</strong>的假期信息<br />
+<blockquote><p>
+  请求内容：</p>
+<pre><code class="php">$month = "2017-07"
+</code></pre>
+<p>  返回 <code>JSON</code> 数据：</p>
+<pre><code class="json">{
+    "month": "2017-07",
+    "dates": [
+        { "date": "2017-07-01" },
+        { "date": "2017-07-02" },
+        { "date": "2017-07-03" },
+        { "date": "2017-07-04" },
+        { "date": "2017-07-05" },
+        { "date": "2017-07-06" }
+    ]
+}
+</code></pre>
+</blockquote>
+</li>
+<li>PUT <code>/holidays</code> : 添加指定<strong>月</strong>的假期日期<br />
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$month = "2017-08"; // 格式为 YYYY-MM 的月份
+$day = "1, 2, 3, 4, 5"; // 以英文逗号分隔的数字（在 1 到 $maxDay 之间）
+</code></pre>
+</blockquote>
+</li>
+<li>DELETE <code>/holidays</code> :  删除指定<strong>月</strong>的假期日期<br />
+<blockquote><p>
+  请求 <code>JSON</code> 数据：</p>
+<pre><code class="php">$month = "2017-08"; // 格式为 YYYY-MM 的月份
+$day = "1, 2, 3, 4, 5"; // 以英文逗号分隔的数字（在 1 到 $maxDay 之间）
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/leave</code> : 返回请假界面</p>
+</li>
+<li>
+<p>POST <code>/leave</code> : 请求指定日期的请假信息</p>
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">// Undeterminated
+</code></pre>
+</blockquote>
+</li>
+<li>PUT <code>/leave</code> : 添加请假信息<br />
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$start_date = '2017-08-03'; // 起始日期，格式为 YYYY-MM-DD
+$end_date = '2017-08-14'; // 结束日期， 格式为 YYYY-MM-DD (包括该日期)
+$employee_id = 21; // 雇员唯一 ID 号
+$type = '病假'; // 请假类型
+$note = '这是一条备注'; // 备注
+</code></pre>
+</blockquote>
+</li>
+<li>DELETE <code>/leave</code> : 删除指定请假信息<br />
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$start_date = '2017-08-10'; // 起始日期，格式为 YYYY-MM-DD
+$end_date = '2017-08-19'; // 结束日期， 格式为 YYYY-MM-DD (包括该日期)
+$employee_id = 21; // 雇员唯一 ID 号
+$type = '病假'; // 请假类型
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/timeedit</code> : 返回有效时间编辑界面</p>
+</li>
+<li>
+<p>PUT <code>/timeedit/update</code> : 更改出勤时间设置</p>
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$am_start_['day', 'hour', 'minute', 'second'] // 上班开始时间（时、分、秒）
+$am_end_['day', 'hour', 'minute', 'second'] // 上班结束时间（时、分、秒）
+$pm_start_['day', 'hour', 'minute', 'second'] // 下午开始时间（时、分、秒）
+$pm_end_['day', 'hour', 'minute', 'second'] // 下午结束时间（时、分、秒）
+$am_ddl_['day', 'hour', 'minute', 'second'] // 上午上班时间（时、分、秒）
+$am_late_ddl_['day', 'hour', 'minute', 'second'] // 上午迟到最晚时间（时、分、秒）
+$pm_ddl_['day', 'hour', 'minute', 'second'] // 下午上班时间（时、分、秒）
+$pm_early_ddl_['day', 'hour', 'minute', 'second'] // 下午早退最早时间（时、分、秒）
+$pm_away_['day', 'hour', 'minute', 'second'] // 下午下班时间（时、分、秒）
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/employees/{work_number}</code> : 返回某个指定雇员信息</p>
+</li>
+<li>
+<p>PUT <code>/employees/{work_number}/records/{id}</code> : 更改某个指定雇员的某条指定出勤记录</p>
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$check_direction // 签到方向
+$check_method // 签到方式（car || card || 请假）
+$card_gate // 刷卡机器编号（可为空）
+$note // 备注
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/admin/actions</code> : 返回当前管理员操作信息<br />
+<blockquote><p>
+  返回 <code>JSON</code> 数据：</p>
+<pre><code class="json">{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 29,
+      "user_id": 1,
+      "action": "login",
+      "timestamp": "2017-08-21 08:50:20"
+    },
+    {
+      "id": 28,
+      "user_id": 1,
+      "action": "logout",
+      "timestamp": "2017-08-21 08:50:18"
+    },
+    {
+      "id": 27,
+      "user_id": 1,
+      "action": "login",
+      "timestamp": "2017-08-21 08:41:59"
+    }
+  ],
+  "from": 1,
+  "last_page": 2,
+  "next_page_url": "http://homestead.app/admin/actions?page=2",
+  "path": "http://homestead.app/admin/actions",
+  "per_page": 15,
+  "prev_page_url": null,
+  "to": 15,
+  "total": 19
+}
+</code></pre>
+</blockquote>
+</li>
+<li>GET <code>/admin/actions/{id}</code> (SuperAdmin ONLY): 返回某个指定管理员的操作信息</p>
+</li>
+<li>
+<p>GET <code>/admin/users</code> (SuperAdmin ONLY): 返回所有管理员信息</p>
+<blockquote><p>
+  返回 <code>JSON</code> 数据：</p>
+<pre><code class="json">{
+  "current_page": 1,
+  "data": [
+    {
+      "id": 3,
+      "name": "Foxwest",
+      "email": "foxwest@403forbidden.website",
+      "admin": 1,
+      "phone_number": "6666666666",
+      "created_at": "2017-08-02 21:31:24",
+      "updated_at": "2017-08-02 21:31:24"
+    },
+    {
+      "id": 1,
+      "name": "TripleZ",
+      "email": "me@triplez.cn",
+      "admin": 1,
+      "phone_number": "888888888",
+      "created_at": "2017-08-02 21:31:24",
+      "updated_at": "2017-08-02 21:31:24"
+    },
+    {
+      "id": 2,
+      "name": "test",
+      "email": "test@triplez.cn",
+      "admin": 0,
+      "phone_number": "***********",
+      "created_at": "2017-08-02 21:31:24",
+      "updated_at": "2017-08-02 21:31:24"
+    }
+  ],
+  "from": 1,
+  "last_page": 1,
+  "next_page_url": null,
+  "path": "http://homestead.app/admin/users",
+  "per_page": 15,
+  "prev_page_url": null,
+  "to": 3,
+  "total": 3
+}
+</code></pre>
+</blockquote>
+</li>
+<li>POST <code>/admin/resetpassword</code> : 重置管理员密码<br />
+<blockquote><p>
+  请求变量：</p>
+<pre><code class="php">$oldpassword // 旧密码
+$password // 新密码
+$password_confirmation // 确认密码
+</code></pre>
+</blockquote>
+</li>
+</ul>
+<h2>7. <a name='Databasetables'></a>Database tables</h2>
+<p>数据表</p>
+<table>
+<thead>
+<tr>
+<th align="center">symbol</th>
+<th align="center">means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">&#42;</td>
+<td align="center">primary key</td>
+</tr>
+<tr>
+<td align="center">^</td>
+<td align="center">foreign key</td>
+</tr>
+</tbody>
+</table>
+<h3>7.1. <a name='tablename:employees'></a>table name: <code>employees</code></h3>
+<p>columns:</p>
+<table>
+<thead>
+<tr>
+<th>ID*</th>
+<th>name</th>
+<th>gender</th>
+<th>eamil</th>
+<th>phone_number</th>
+<th>work_title</th>
+<th>department</th>
+<th>car_number</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>TripleZ</td>
+<td>man</td>
+<td>me@triplez.cn</td>
+<td>15240241051</td>
+<td>CEO</td>
+<td>Develop Department</td>
+<td>null</td>
+</tr>
+</tbody>
+</table>
+<h3>7.2. <a name='tablenames:records'></a>table names: <code>records</code></h3>
+<p>columns:</p>
+<table>
+<thead>
+<tr>
+<th>ID*</th>
+<th>employee_id^</th>
+<th>check_direction(Y/N)</th>
+<th>check_method</th>
+<th>check_time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>3</td>
+<td>1</td>
+<td>card</td>
+<td>2017-07-21 13:22:13</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3</td>
+<td>0</td>
+<td>card</td>
+<td>2017-07-21 17:22:13</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1</td>
+<td>1</td>
+<td>car</td>
+<td>2017-07-22 07:22:13</td>
+</tr>
+<tr>
+<td>4</td>
+<td>1</td>
+<td>0</td>
+<td>car</td>
+<td>2017-07-22 12:22:13</td>
+</tr>
+</tbody>
+</table>
+<h3>7.3. <a name='tablename:users'></a>table name: <code>users</code></h3>
+<p>columns:</p>
+<table>
+<thead>
+<tr>
+<th>ID*</th>
+<th>name</th>
+<th>email</th>
+<th>password</th>
+<th>admin(Y/N)</th>
+<th>phone_number</th>
+<th>created_at</th>
+<th>updated_at</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>TripleZ</td>
+<td>me@triplez.cn</td>
+<td>******</td>
+<td>1</td>
+<td>66666666</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>test</td>
+<td>test@triplez.cn</td>
+<td>******</td>
+<td>0</td>
+<td>88888888</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>7.4. <a name='tablename:user_action_records'></a>table name: <code>user_action_records</code></h3>
+<p>columns:</p>
+<table>
+<thead>
+<tr>
+<th>ID*</th>
+<th>user_id^</th>
+<th>action</th>
+<th>timestamp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>login</td>
+<td>2017-07-23 15:47:35</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1</td>
+<td>logout</td>
+<td>2017-07-23 15:47:39</td>
+</tr>
+</tbody>
+</table>
+<h2>8. <a name='Migrations'></a>Migrations</h2>
+<ul>
+<li>2014_10_12_000000_create_xx_table</li>
+</ul>
+<pre><code class="bash">php artisan migrate:reset
+php artisan migrate
+</code></pre>
+<h2>9. <a name='Seeds'></a>Seeds</h2>
+<p>填充假数据</p>
+<ul>
+<li>UsersTableSeeder</li>
+<li>EmployeeSeeder</li>
+<li>RecordSeeder</li>
+<li>ActionRecordSeeder</li>
+<li>CarRecordSeeder</li>
+<li>CardRecordSeeder</li>
+<li>TimeNodeSeeder</li>
+<li>DailyCheckStatusSeeder</li>
+<li>HolidayDateSeeder</li>
+<li>AbsenceValidRecordSeeder</li>
+</ul>
+<pre><code class="bash">composer dump-autoload
+php artisan db:seed
+</code></pre>
+<p>记得将需要 seed 的数据在 <code>database/seeds/DatabaseSeeder.php</code> 中注册。</p>
+<h2>10. <a name='EmployeeStatus'></a>Employee Status</h2>
+<p>雇员状态</p>
+<ul>
+<li>正常</li>
+<li>迟到</li>
+<li>早退</li>
+<li>迟到早退</li>
+<li>缺勤</li>
+<li>事假</li>
+<li>病假</li>
+<li>暂无</li>
+</ul>
+<h2>11. <a name='ImportantTimestamp'></a>Important Timestamp</h2>
+<p>重要时间戳</p>
+<ul>
+<li>Global</li>
+</ul>
+<pre><code class="php">$am_start = `3:00` // 上午记录开始时间
+$am_end = `14:00` // 上午记录结束时间
+$pm_start = `12:00` // 下午记录开始时间
+$pm_end = `+1Day 3:00` // 下午记录结束时间
+</code></pre>
+<ul>
+<li>AM</li>
+</ul>
+<pre><code class="php">$am_ddl = `8:00` // 上午签到最晚时间
+$am_late_ddl = `10:00` // 上午签到迟到最晚时间
+</code></pre>
+<ul>
+<li>PM</li>
+</ul>
+<pre><code class="php">$pm_ddl = `14:00` // 下午签到最晚时间
+$pm_away = `18:00` // 下午离开最早时间
+$pm_early_ddl = `16:00` // 下午离开早退最早时间
+</code></pre>
+<h3>11.1. <a name='DefaultTimezone'></a>Default Timezone</h3>
+<p>默认时区</p>
+<p><code>UTC+8</code> <code>Asia/Shanghai</code></p>
+<h2>12. <a name='Schedulingtask'></a>Scheduling task</h2>
+<p>计划任务</p>
+<h2>13. <a name='note'></a>note</h2>
+<h3>13.1. <a name='Errormessage:'></a>Error message:</h3>
+<pre><code>$ php artisan migrate
+Migration table created successfully.
+
+
+  [Illuminate\Database\QueryException]
+  SQLSTATE[42000]: Syntax error or access violation: 1071 Specified key was t
+  oo long; max key length is 1000 bytes (SQL: alter table `users` add unique
+  `users_email_unique`(`email`))
+
+  [PDOException]
+  SQLSTATE[42000]: Syntax error or access violation: 1071 Specified key was t
+  oo long; max key length is 1000 bytes
+</code></pre>
+<h3>13.2. <a name='Solution'></a>Solution</h3>
+<p>in file: <code>config\database.php</code></p>
+<pre><code>'charset' => 'utf8mb4',
+'collation' => 'utf8mb4_unicode_ci',
+'engine' => 'InnoDB ROW_FORMAT=DYNAMIC',
+</code></pre>
+<h3>13.3. <a name='ChangeServerTimezone'></a>Change Server Timezone</h3>
+<pre><code class="bash">sudo timedatectl set-timezone Asia/Shanghai
+date
+</code></pre>
+<blockquote><p>
+  Add timezone when written data into database!</p>
+<p>  <code>Caron::now('Asia/Shanghai')</code> <strong>OR</strong> <code>Carbon::now('CST')</code>
+</p></blockquote>
+<h2>14. <a name='SourceCoderewrite'></a>Source Code rewrite</h2>
+<h3>14.1. <a name='modalposition'></a>modal position</h3>
+<p>demand:</p>
+<p>make the modal box be at a right position</p>
+<h3>14.2. <a name='positionmethod'></a>positionmethod</h3>
+<p>find the function 'Modal.prototype.adjustDialog' bootstrap.js(in this project is included in public/js/app.js),then replace them as the follow code:</p>
+<pre><code>Modal.prototype.adjustDialog = function () {  
+    var modalIsOverflowing = this.$element[0].scrollHeight > document.documentElement.clientHeight  
+
+    this.$element.css({  
+      paddingLeft:  !this.bodyIsOverflowing &amp;&amp; modalIsOverflowing ? this.scrollbarWidth : '',  
+      paddingRight: this.bodyIsOverflowing &amp;&amp; !modalIsOverflowing ? this.scrollbarWidth : ''  
+    });  
+
+
+    var $modal_dialog = $(this.$element[0]).find('.modal-dialog');  
+    //get the view heigh
+    var clientHeight = (document.body.clientHeight < document.documentElement.clientHeight) ? document.body.clientHeight: document.documentElement.clientHeight;  
+    //get dialog heigh 
+    var dialogHeight = $modal_dialog.height();  
+    //compute the distance to the top 
+    var m_top = (clientHeight - dialogHeight)/3;  
+    // console.log("clientHeight : " + clientHeight);  
+    // console.log("dialogHeight : " + dialogHeight);  
+    // console.log("m_top : " + m_top);  
+    $modal_dialog.css({'margin': m_top + 'px auto'});  
+}  
+</code></pre>
+<h2>15. <a name='Web-viewLayoutsDesign'></a>Web-view Layouts Design</h2>
+<h3>15.1. <a name='generalpage'></a>general page</h3>
+<p>function:display all the records ordered by time stamp</p>
+<p>demand:</p>
+<ol>
+<li>day/week/month</li>
+<li>export as excel</li>
+<li>correct records</li>
+<li>search by employee name</li>
+</ol>
+<p>view structure:</p>
+<pre><code>   _____________________________
+  |                     export  |
+  |display option | search box  |
+  |-----------------------------|
+  |records                      |
+  |record 1              correct|
+  |record 2              correct|
+  |   .                     .   |
+  |   .                     .   |
+  |_____________________________|
+</code></pre>
+<h3>15.2. <a name='graphpage'></a>graph page</h3>
+<p>function: build a calendar, and display each employee duty status.</p>
+<p>demand:</p>
+<ol>
+<li>a calendar can show as day/week/month.</li>
+<li>mark up the time/date that has record</li>
+</ol>
+<p>view structure:</p>
+<pre><code>   _____________________________
+  |                             |
+  |display option | search box  |
+  |-----------------------------|
+  |calendar option              |
+  |   .                     .   |
+  |   .                     .   |
+  |   .     calendar        .   |
+  |   .                     .   |
+  |_____________________________|
+</code></pre>
+<h3>15.3. <a name='validrecords'></a>valid records</h3>
+<p>function: display all records by day.</p>
+<p>demand:</p>
+<ol>
+<li>display single record(included in and out) of each employee devided by day</li>
+<li>should include arrive&amp;leave time,also,a status indicate valid(invalid) should be shown</li>
+</ol>
+<p>view structure:</p>
+<pre><code>   _____________________________
+  |                     export  |
+  |       | search box  |       |
+  |-----------------------------|
+  |records        status        |
+  |record 1          Y   correct|
+  |record 2          Y   correct|
+  |   .                     .   |
+  |      pagination by day      |
+  |_____________________________|
+</code></pre>
+<h3>15.4. <a name='holidaypageoption'></a>holiday page(option)</h3>
+<p>function: mark up holiday.</p>
+<p>demand:</p>
+<ol>
+<li>decide which day has no duty</li>
+<li>mark up the time/date in the calendar view</li>
+</ol>
+<p>view structure:</p>
+<pre><code>   _____________________________
+  |                             |
+  |        ????????????         |
+  |-----------------------------|
+  |calendar option              |
+  |   .                     .   |
+  |   .                     .   |
+  |   .     calendar        .   |
+  |   .                     .   |
+  |_____________________________|
+</code></pre>
+<h3>15.5. <a name='timeeditpage'></a>timeedit page</h3>
+<p>function:define legal time</p>
+<p>demand:</p>
+<ol>
+<li>define valid time of records</li>
+</ol>
+<p>view structure:</p>
+<pre><code>   _____________________________
+  |                             |
+  |        ????????????         |
+  |-----------------------------|
+  |                             |
+  |   .                     .   |
+  |   .      post form      .   |
+  |   .                     .   |
+  |   .                     .   |
+  |_____________________________|
+</code></pre>
+<h1>Copyright</h1>
+<p>版权信息</p>
+<p>Copyright (c) 2017 <a href="https://triplez.cn">TripleZ</a> <a href="http://403forbidden.website">Foxwest</a></p>
+
+  </div><a class="u-url" href="/%E5%BC%80%E5%8F%91/2018/01/23/dutysystem.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">DoubleMice</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">DoubleMice</li><li><a class="u-email" href="mailto:foxwest@qq.com">foxwest@qq.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/DoubleMice"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">DoubleMice</span></a></li><li><a href="https://www.twitter.com/__Socrates"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">__Socrates</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Write an awesome description for your new site here. You can edit this line in _config.yml. It will appear in your document head meta (for Google search results) and in your feed.xml site description.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

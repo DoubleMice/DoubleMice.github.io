@@ -1,0 +1,167 @@
+---
+layout: post
+status: publish
+published: true
+title: HITB GSEC CTF 2017 babystack
+author:
+  display_name: SpeakSoftlyLove
+  login: root
+  email: foxwest@qq.com
+  url: ''
+author_login: root
+author_email: foxwest@qq.com
+wordpress_id: 184
+wordpress_url: http://403forbidden.website/?p=184
+date: '2017-10-15 20:25:52 +0800'
+date_gmt: '2017-10-15 12:25:52 +0800'
+categories:
+- Pwn
+tags:
+- win-pwn
+comments:
+- id: 169
+  author: link3d1n
+  author_email: link3d1nmail@gmail.com
+  author_url: ''
+  date: '2018-01-22 22:39:41 +0800'
+  date_gmt: '2018-01-22 14:39:41 +0800'
+  content: 膜啊膜
+- id: 170
+  author: SpeakSoftlyLove
+  author_email: foxwest@qq.com
+  author_url: ''
+  date: '2018-01-22 22:48:01 +0800'
+  date_gmt: '2018-01-22 14:48:01 +0800'
+  content: 哇，大佬你好啊
+---
+<p>作为一个pwn新手，前段时间刚好在学win平台的pwn，找了道Atum大佬的题，边学边怼。<br />
+期间参考文章有两篇，写的相当好，此处记录了我的一些粗糙的思考过程。<br />
+<a href="https://whereisk0shl.top/post/hitb_gsec_ctf_babystack_writeup">k0shl师傅</a><br />
+<a href="https://bbs.pediy.com/thread-221016.htm">污师师傅</a></p>
+<p><strong>步骤1：</strong><br />
+运行程序发现它初始化后已经显示了main和stack的地址,并允许我们查看任意内存中的数据。<br />
+通过ida的string窗口快速定位代码:</p>
+<p><img src="http://403forbidden.website/wp-content/uploads/2017/10/general_code.jpg" alt="" /><br />
+程序的逻辑如下：<br />
+初始化进入for循环之后，我们输入"yes"则进入"else"语句；输入"no"则"break"；输入"其他字符"时则会进入<code>sub_401000()</code>函数引发栈溢出。<br />
+<code>sub_401060()</code>函数读入十进制地址值，再通过<code>atoi()</code>将我们输入的地址中的内容以十进制输出。</p>
+<p>同时查看汇编代码会发现倒数第二个<code>puts()</code>中有：<br />
+<img src="http://403forbidden.website/wp-content/uploads/2017/10/shellcode.jpg" alt="" /></p>
+<p><strong>步骤2：</strong><br />
+以上信息可以得出：<br />
+* 程序给出了目标栈地址和main函数地址,所以就不用担心aslr和栈地址的变化。<br />
+* 代码段中包含了"cmd"，故我们不需要考虑DEP，也不用再另外编写shellcode。<br />
+所以，我们的任务是如何在for的10次循环之内控制eip指向已有的"cmd"。</p>
+<p>我们知道win平台有seh函数，在程序运行异常时会调用异常处理函数，可以尝试在这里下手，最主要的原因是可以看到程序是以<code>exit(0)</code>退出的，而调用<code>exit()</code>的时候会切换到一个新的栈，并不能通过栈溢出覆盖返回地址来控制eip。</p>
+<p>对于seh有操作系统支持的safeSEH机制来保护其完整性，所以为了能够操作seh必须知道safeSEH的工作原理和绕过方法。</p>
+<p>我们来深入了解一下seh和safeSEH机制。</p>
+<p><strong>关于seh</strong><br />
+在 <code>structure</code>窗口可以看到seh的结构体：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/sehstruori.jpg" alt="" /><br />
+  其原型为（拓展的）：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/scopetablerecord.jpg" alt="" /><br />
+  seh chain是一个链结构，每一个seh是链表上的一个结点，<code>next</code>指向下一个seh结构，而最后一个<code>next</code>指针值为<code>-1</code>(即<code>0xFFFFFFFF</code>)，在win程序上经常看见这家伙的身影。<br />
+  在 ImmunityDebugger 中对栈进行追踪可以很快定位seh位置、熟悉其结构。我们运行 babystack.exe 并 attach 到调试器上输入一串<code>AAAAAAAA...AAAA</code>：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/AAAA.jpg" alt="" /><br />
+  虽然我们覆盖了seh handler但是seh链却不会触发。原因是即使我们知道输入的一堆A并不合法，但是异常处理函数处理的异常类型是代码中定义的，我们并不能确切知道它会处理什么类型的错误，不过却帮助我们定位了seh栈的位置。在要求输入地址时我们可以输入一个非法地址来触发异常处理函数。<br />
+  在程序主要部分，<code>puts()</code>执行之前有一段构造拓展的seh结构体的代码。</p>
+<h2>  <img src="http://403forbidden.website/wp-content/uploads/2017/10/build_seh.jpg" alt="" /></h2>
+<p><strong>关于safeSEH</strong><br />
+在调用异常处理函数之前，对要调用的<strong>异常处理函数</strong>进行一系列的有效性校验，如果发现异常处理函数不可靠（被覆盖了，被篡改了），立即终止异常处理函数的调用。<br />
+  函数逻辑如下：<br />
+  <img src="./file_for_writeup/safeseh.jpg" alt="" /><br />
+  附:<a href="http://www.cnblogs.com/exclm/p/3958738.html">更多safeSEH相关信息</a></p>
+<p>绕过safeSEH的必要条件：①GS关闭②攻击虚表函数③有可用堆④有no-safeSEH的dll⑤DEP关闭，其中任意一个条件满足就有可能绕过safeSEH，但是上边分析均排除②以外的可能，而检查汇编代码没有发现虚函数，故没办法绕过对seh的检查。</p>
+<p>所以很遗憾我们并不能通过修改seh结构体的<code>ExceptionHandler</code>函数指针来指向"cmd"，这时我们注意到了<code>ScopeTable</code>这个成员，这家伙是干啥的呢。</p>
+<p><strong>关于scopetable</strong><br />
+scopetable结构体：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/scopetable.jpg" alt="" /><br />
+  ScopeRecord:<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/scopetablerecord-1.jpg" alt="" /><br />
+  查找相关资料得知<code>scopetable</code>与附件中的<code>vcruntime.dll</code>中的<code>_except_handler4_common()</code>函数密切相关，我们来继续看看这个函数。由对seh结构体构造过程的分析知道成员<code>ExceptionHandler</code>就是<code>_except_handler4_common</code>这个函数。由于safeSEH对seh结构体的检测，我们可以考虑修改<code>ExceptionHandler</code>指针指向的函数里的内容。<br />
+  通过查询<code>0x00000000</code>处的内容来触发seh，在<code>ImmunityDebugger</code>把断点下在<code>VCRUNTIME140.dll</code>模块的<code>_except_handler_common</code>函数入口：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/exception_handler_common.jpg" alt="" /><br />
+  注意此时的<code>babystac.0053688</code>，这个是<code>babystack.exe</code>中构造seh结构体时存储<code>scopetable</code>的地方：<br />
+  <img src="http://403forbidden.website/wp-content/uploads/2017/10/d_build_seh.jpg" alt="" /></p>
+<p>看雪上的_except_handler_common伪代码：</p>
+<pre><code>void __cdecl ValidateLocalCookies(void (__fastcall *cookieCheckFunction)(unsigned int), _EH4_SCOPETABLE *scopeTable, char *framePointer)
+{
+    unsigned int v3; // esi@2
+    unsigned int v4; // esi@3
+
+    if ( scopeTable->GSCookieOffset != -2 )
+    {
+        v3 = *(_DWORD *)&amp;framePointer[scopeTable->GSCookieOffset] ^ (unsigned int)&amp;framePointer[scopeTable->GSCookieXOROffset];
+        __guard_check_icall_fptr(cookieCheckFunction);
+        ((void (__thiscall *)(_DWORD))cookieCheckFunction)(v3);
+    }
+    v4 = *(_DWORD *)&amp;framePointer[scopeTable->EHCookieOffset] ^ (unsigned int)&amp;framePointer[scopeTable->EHCookieXOROffset];
+    __guard_check_icall_fptr(cookieCheckFunction);
+    ((void (__thiscall *)(_DWORD))cookieCheckFunction)(v4);
+}
+
+int __cdecl _except_handler4_common(unsigned int *securityCookies, void (__fastcall *cookieCheckFunction)(unsigned int), _EXCEPTION_RECORD *exceptionRecord, unsigned __int32 sehFrame, _CONTEXT *context)
+{
+    // 异或解密 scope table
+    scopeTable_1 = (_EH4_SCOPETABLE *)(*securityCookies ^ *(_DWORD *)(sehFrame + 8));
+
+    // sehFrame 等于 上图 ebp - 10h 位置, framePointer 等于上图 ebp 的位置
+    framePointer = (char *)(sehFrame + 16);
+    scopeTable = scopeTable_1;
+
+    // 验证 GS
+    ValidateLocalCookies(cookieCheckFunction, scopeTable_1, (char *)(sehFrame + 16));
+    __except_validate_context_record(context);
+
+    if ( exceptionRecord->ExceptionFlags &amp; 0x66 )
+    {
+        ......
+    }
+    else
+    {
+        exceptionPointers.ExceptionRecord = exceptionRecord;
+        exceptionPointers.ContextRecord = context;
+        tryLevel = *(_DWORD *)(sehFrame + 12);
+        *(_DWORD *)(sehFrame - 4) = &amp;exceptionPointers;
+        if ( tryLevel != -2 )
+        {
+            while ( 1 )
+            {
+                v8 = tryLevel + 2 * (tryLevel + 2);
+                filterFunc = (int (__fastcall *)(_DWORD, _DWORD))*(&amp;scopeTable_1->GSCookieXOROffset + v8);
+                scopeTableRecord = (_EH4_SCOPETABLE_RECORD *)((char *)scopeTable_1 + 4 * v8);
+                encloseingLevel = scopeTableRecord->EnclosingLevel;
+                scopeTableRecord_1 = scopeTableRecord;
+                if ( filterFunc )
+                {
+                    // 调用 FilterFunc
+                    filterFuncRet = _EH4_CallFilterFunc(filterFunc);
+                    ......
+                    if ( filterFuncRet > 0 )
+                    {
+                        ......
+                        // 调用 HandlerFunc
+                        _EH4_TransferToHandler(scopeTableRecord_1->HandlerFunc, v5 + 16);
+                        ......
+                    }
+                }
+                ......
+                tryLevel = encloseingLevel;
+                if ( encloseingLevel == -2 )
+                    break;
+                scopeTable_1 = scopeTable;
+            }
+            ......
+        }
+    }
+  ......
+}
+</code></pre>
+<p>这个函数最后会调用<code>scopetable->ScopeRecord</code>中的<code>FilterFunc</code>和<code>HandlerFunc</code>。</p>
+<p>附：<br />
+<a href="http://www.mouseos.com/windows/SEH1.html">TEB</a><br />
+<a href="http://www.mouseos.com/windows/SEH6.html">scopetable</a></p>
+<p><strong>步骤3：</strong><br />
+到这里，我们有一个栈溢出、一个任意地址读、一个&ldquo;可控&rdquo;的<code>scopetable</code>，正是由于<code>safeSEH</code>只检测<code>EH handler</code>、<code>safeOP</code>只检测seh chain的完整性，故能够伪造<code>scopetable</code>中的<code>HandlerFunc</code>，修复溢出后的栈结构触发seh即可。细节上要注意的是SecurityCookie。</p>
+<p>攻击前后栈布局：</p>
+<p><img src="http://403forbidden.website/wp-content/uploads/2017/10/babystack.jpg" alt="" /></p>

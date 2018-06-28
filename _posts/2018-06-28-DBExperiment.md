@@ -130,7 +130,6 @@ system echo "update"
 INSERT into SC values (21001615,1,90);
 INSERT into SC values (21001615,2,90);
 UPDATE SC SET Grade=90 WHERE Sno=21001615;
-UPDATE S SET Sname='梁志浩' WHERE Sno=21001615;
 SELECT * FROM SC;
 ```
 ---
@@ -145,8 +144,11 @@ SELECT * FROM SC;
 7. 查询所有 3 个学分课程中有 3 门以上(含 3 门)课程获 80 分以上(含 80 分)的学生的姓名。
 8. 查询选课门数唯一的学生的学号。
 9. SELECT 语句中各种查询条件的实验。
+
 ---
+
 **solution**
+
 ```sql
 -- 2.1
 system echo "---------------2.1"
@@ -415,7 +417,7 @@ Rows matched: 1  Changed: 1  Warnings: 0
 |  2100167 | name7     |
 | 21001610 | name10    |
 | 21001613 | name13    |
-| 21001615 | namexx    |
+| 21001615 | name15    |
 | 21001616 | name16    |
 | 21001619 | name19    |
 | 21001622 | name22    |
@@ -433,7 +435,7 @@ Rows matched: 1  Changed: 1  Warnings: 0
 |  2100167 | name7     |
 | 21001610 | name10    |
 | 21001613 | name13    |
-| 21001615 | namexx    |
+| 21001615 | name15    |
 | 21001616 | name16    |
 | 21001619 | name19    |
 | 21001622 | name22    |
@@ -451,7 +453,7 @@ Rows matched: 1  Changed: 1  Warnings: 0
 |  2100168 | name8     |
 | 21001611 | name11    |
 | 21001614 | name14    |
-| 21001615 | namexx    |
+| 21001615 | name15    |
 | 21001617 | name17    |
 | 21001620 | name20    |
 | 21001623 | name23    |
@@ -487,7 +489,7 @@ Rows matched: 1  Changed: 1  Warnings: 0
 | name12    |
 | name13    |
 | name14    |
-| namexx    |
+| name15    |
 | name16    |
 | name17    |
 | name18    |
@@ -518,7 +520,7 @@ Rows matched: 1  Changed: 1  Warnings: 0
 +-----------+
 | Sname     |
 +-----------+
-| namexx    |
+| name15    |
 +-----------+
 1 row in set (0.00 sec)
 
@@ -531,7 +533,7 @@ Query OK, 0 rows affected (0.02 sec)
 +-----------+-----------+
 |  2100167 | name7     |
 | 21001613 | name13    |
-| 21001615 | namexx    |
+| 21001615 | name15    |
 | 21001619 | name19    |
 | 21001625 | name25    |
 |  2100165 | name5     |

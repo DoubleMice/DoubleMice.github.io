@@ -1,3 +1,7 @@
+---
+tags:
+- course
+---
 <h1 align="center">数据库原理实验</h1>
 <!-- TOC -->
 

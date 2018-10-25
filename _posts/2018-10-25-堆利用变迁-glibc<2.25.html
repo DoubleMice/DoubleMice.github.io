@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title># 堆利用变迁</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="created" content="2018-10-25T21:35:35+0800"/>
+        <meta name="modified" content="2018-10-25T21:39:36+0800"/>
+        <meta name="tags" content="smallbin_corruption, 任意地址写, 得到两个相同堆块, fsop, smallbin, fastbin_attack, large_bin, double_free, glibc<2_24, fake_chunk, unsorted_bin, unlink"/>
+        <meta name="last device" content="DoubleMice MBP"/>
+    </head>
+    <body>
+        <div class="note-wrapper">
+            <h1># 堆利用变迁</h1>
+<br>
+<br>
+<h2>构建测试环境</h2>
+<ul><li>编译glibc2.25
+</li></ul>
+<pre><code class='code-multiline' lang='bash'><span class="sf_code_function">wget</span> https://ftp.gnu.org/gnu/libc/glibc-2.25.tar.gz
+<span class="sf_code_function">tar</span> xvf glibc-2.25.tar.bz2
+<span class="sf_code_function">mkdir</span> gcc225——build
+<span class="sf_code_function">cd</span> gcc225_build/
+<span class="sf_code_punctuation">..</span>/glibc-2.25/configure --prefix<span class="sf_code_operator">=</span>/usr/local/glibc225
+<span class="sf_code_function">sudo</span> <span class="sf_code_function">mkdir</span> /usr/local/glibc225
+<span class="sf_code_function">sudo</span> <span class="sf_code_function">make</span> <span class="sf_code_function">install</span></code></pre>
+<p><br></p>
+<br>
+<br>
+<br>
+<h2>fastbin consolidate</h2>
+<p><span class='hashtag'>#smallbin</span> <span class='hashtag'>#double_free</span>  <span class='hashtag'>#得到两个相同堆块</span></p>
+<br>
+<blockquote>
+<p>条件：double free</p>
+</blockquote>
+<br>
+<p>malloc(smbin1)</p>
+<p>malloc(smbin2)</p>
+<br>
+<p>free(smbin1)</p>
+<p>malloc(lgbin3)触发malloc_consolidate，此时smbin1移入unsorted bin，并没有在fastbin top，故再次free不会报错</p>
+<p>free(smbin1)</p>
+<p>*p1=malloc(smbin1)</p>
+<p>*p2=malloc(smbin1)</p>
+<p>p1与p2相同</p>
+<br>
+<br>
+<br>
+<h2>fastbin into stack</h2>
+<p><span class='hashtag'>#smallbin</span> <span class='hashtag'>#double_free</span> <span class='hashtag'>#任意地址写</span></p>
+<br>
+<blockquote>
+<p>条件：double free</p>
+</blockquote>
+<br>
+<p>malloc(a1)</p>
+<p>malloc(a2)</p>
+<p>malloc(a3)</p>
+<p>free(a1)</p>
+<p>free(a2)	使得fastbin top 不是a1，故再次free(a1)不会报错</p>
+<p>free(a1)		fastbin : a1 <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> a2 <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> a1</p>
+<p>malloc(a1)</p>
+<p>malloc(a2)</p>
+<p>edit(a1,&victim -	sizeof(a1) - 0x8 )</p>
+<p>malloc(a1)</p>
+<p>malloc(a1)	get victim</p>
+<br>
+<br>
+<h2>unsafe unlink</h2>
+<p><span class='hashtag'>#unlink</span> <span class='hashtag'>#fake_chunk</span> <span class='hashtag'>#任意地址写</span></p>
+<br>
+<blockquote>
+<p>条件：overwrite chunk 1 header</p>
+</blockquote>
+<br>
+<p>&chunk 0,1为全局变量</p>
+<br>
+<p><img src='../assets/2018-10/heap1-1.png'></p>
+<p>free(chunk 1)		触发堆块合并，用victim覆盖&chunk 0</p>
+<br>
+<br>
+<h2>unsorted_bin_attack</h2>
+<p><span class='hashtag'>#large_bin</span> <span class='hashtag'>#任意地址写</span></p>
+<br>
+<blockquote>
+<p>条件：overwrite <code class='code-inline'>lgbin1-&gt;bk</code></p>
+</blockquote>
+<br>
+<p>malloc(lgbin1)</p>
+<p>malloc(lgbin2)	防止free(lgbin1)时top chunk和lgbin1合并</p>
+<br>
+<p>free(lgbin1)		after lgbin1 freed</p>
+<br>
+<p><img src='../assets/2018-10/heap1-2.png'></p>
+<br>
+<br>
+<br>
+<p>修改<code class='code-inline'>lgbin1-&gt;bk</code>为 &victim - 0x10  (32位&victim - 0x8)</p>
+<br>
+<p><img src='../assets/2018-10/heap1-3.png'></p>
+<br>
+<p>malloc(lgbin1)	得到victim</p>
+<br>
+<br>
+<h2>unsorted bin into stack</h2>
+<p><span class='hashtag'>#large_bin</span> </p>
+<blockquote>
+<p>条件：overwrite <code class='code-inline'>lgbin1-&gt;bk</code>,<code class='code-inline'>lgbin1-&gt;size</code></p>
+</blockquote>
+<br>
+<p>malloc(lgbin1)</p>
+<p>malloc(lgbin2)	防止后面free(lgbin1)时lgbin1与top chunk 合并</p>
+<br>
+<p>free(lgbin1)</p>
+<br>
+<p>开始在栈上伪造堆块</p>
+<p>stack_buffer[1] = 0x100 + 0x10;</p>
+<p>stack_buffer[3] = victim;</p>
+<br>
+<p>绕过检查<code class='code-inline'>2*SIZE_SZ (&gt; 16 on x64) && &lt; av-&gt;system_mem</code></p>
+<br>
+<p>伪造的lgbin1->size!=下一次malloc的size</p>
+<br>
+<p><img src='../assets/2018-10/heap1-4.png'></p>
+<br>
+<p>mallic(0x100)</p>
+<br>
+<br>
+<h2>large bin attack</h2>
+<p><span class='hashtag'>#large_bin</span></p>
+<br>
+<blockquote>
+<p>条件：overwrite <code class='code-inline'>victim-&gt;size</code> <code class='code-inline'>victim-&gt;bk</code> <code class='code-inline'>victim-&gt;bk_nextsize</code></p>
+</blockquote>
+<br>
+<p>*p1 = malloc(0x320)</p>
+<p>malloc(0x20)		防止free(p1)时p1与下一个large bin合并</p>
+<p>*p2 = malloc(0x400)</p>
+<p>malloc(0x20)</p>
+<p>*p3 = malloc(0x400)</p>
+<p>malloc(0x20)</p>
+<br>
+<p>free(p1)</p>
+<p>free(p2)</p>
+<p>unsorted bin: [ p2 <--> p1 ]</p>
+<br>
+<br>
+<p>malloc(0x90)		</p>
+<p>p2进入large bin: [p2]</p>
+<p>p1切割后剩下的重新进入unsorted bin: [p1_remainder]</p>
+<br>
+<p>free(p3)		p3进入unsorted bin: [p3<—>p1_remainder]</p>
+<br>
+<br>
+<p>overwrite p2 to:</p>
+<br>
+<br>
+<p><img src='../assets/2018-10/heap1-5.png'></p>
+<br>
+<br>
+<p>malloc(0x90)	</p>
+<br>
+<br>
+<h2>overlapping_chunks</h2>
+<p><span class='hashtag'>#large_bin</span> <span class='hashtag'>#unsorted_bin</span></p>
+<br>
+<blockquote>
+<p>条件：overwrite <code class='code-inline'>victim-&gt;size</code></p>
+<p>描述：free <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> fake <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> malloc</p>
+</blockquote>
+<br>
+<p>*p1=malloc(0x100)</p>
+<p>*p2=malloc(0x100)</p>
+<p>*p3=malloc(0x80)</p>
+<br>
+<p>free(p2)</p>
+<br>
+<p>overwrite p2->size to (0x180|pre_inuse)</p>
+<br>
+<p><img src='../assets/2018-10/heap1-6.png'></p>
+<br>
+<br>
+<p>*p4 = malloc(0x180-0x8)</p>
+<br>
+<p>p4包含了p3</p>
+<br>
+<p><img src='../assets/2018-10/heap1-7.png'></p>
+<br>
+<h2>overlapping_chunks  2</h2>
+<blockquote>
+<p>Nonadjacent Free Chunk Consolidation Attack</p>
+<p>条件：overwrite <code class='code-inline'>victim-&gt;size</code></p>
+<p>描述：fake <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> free <span class='arrow'><svg width="11px" height="10px" viewBox="0 0 11 10" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" >    <g id="right-arrow" >        <path d="M1.77635684e-14,5 L9,5" id="rod" stroke="#000000" stroke-width="2" ></path>        <path d="M11,5 L6,0.5 L6,9.5 L11,5 Z" id="point" fill="#000000"></path>    </g></svg></span> malloc</p>
+</blockquote>
+<br>
+<br>
+<p>*p1=malloc(1000)</p>
+<p>*p2=malloc(1000)</p>
+<p>*p3=malloc(1000)</p>
+<p>*p4=malloc(1000)</p>
+<p>*p5=malloc(1000)	使得p4不是top chunk</p>
+<br>
+<p>free(p4)</p>
+<br>
+<p>开始用</p>
+<p><code class='code-inline'>real_size_p2+real_size_p3+prev_in_use+sizeof(size_t)*2</code></p>
+<p>overwrite <code class='code-inline'>p2-&gt;size</code></p>
+<br>
+<br>
+<p><img src='../assets/2018-10/heap1-8.png'></p>
+<br>
+<br>
+<br>
+<p>free(p2)</p>
+<p>*p6=malloc(2000)</p>
+<p>p6包含p3</p>
+<br>
+<p><img src='../assets/2018-10/heap1-9.png'></p>
+<br>
+<br>
+<br>
+<h2>house of spirit</h2>
+<p><span class='hashtag'>#fastbin_attack</span></p>
+<br>
+<blockquote>
+<p>描述：任意地址free，free一个伪造的堆块，再次申请时新的堆块从该地址开始</p>
+</blockquote>
+<br>
+<pre><code class='code-multiline'>This chunk.size of this region has to be 16 more than the region (to accomodate the chunk data) while still falling into the fastbin category (&lt;= 128 on x64). The PREV_INUSE (lsb) bit is ignored by free for fastbin-sized chunks, however the IS_MMAPPED (second lsb) and NON_MAIN_ARENA (third lsb) bits cause problems.
+... note that this has to be the size of the next malloc request rounded to the internal size used by the malloc implementation. E.g. on x64, 0x30-0x38 will all be rounded to 0x40, so they would work for the malloc parameter at the end. 
+The chunk.size of the *next* fake region has to be sane. That is &gt; 2*SIZE_SZ (&gt; 16 on x64) && &lt; av-&gt;system_mem (&lt; 128kb by default for the main arena) to pass the nextsize integrity checks. No need for fastbin size.</code></pre>
+<p><br></p>
+<blockquote>
+<p>条件：</p>
+<p> <code class='code-inline'>size</code>必须能够落入fastbin  (<= 128 on x64)</p>
+<p>fastbin大小限制</p>
+<br>
+<p><code class='code-inline'>next-&gt;size</code>必须<code class='code-inline'>&gt; 2*SIZE_SZ (&gt; 16 on x64) && &lt; av-&gt;system_mem (&lt; 128kb by default for the main arena)</code></p>
+<p>nextsize完整性校验</p>
+</blockquote>
+<br>
+<p>受<code class='code-inline'>IS_MMAPPED </code>和<code class='code-inline'>NON_MAIN_ARENA </code>位影响</p>
+<br>
+<br>
+<h2>house of orange</h2>
+<p><span class='hashtag'>#fsop</span> <span class='hashtag'>#glibc<2_24</span></p>
+<br>
+<br>
+<blockquote>
+<p>The attack vector of this technique was removed by changing the behavior of malloc_printerr, which is no longer calling _IO_flush_all_lockp, in 91e7cf982d0104f0e71770f5ae8e3faf352dea9f (2.26)</p>
+<p>Since glibc 2.24 _IO_FILE vtable are checked against a whitelist breaking this exploit,<a href="https://sourceware.org/git/?p=glibc.git;a=commit;h=db3476aff19b75c4fdefbe65fcd5f0a90588ba51">https://sourceware.org/git/?p=glibc.git;a=commit;h=db3476aff19b75c4fdefbe65fcd5f0a90588ba51</a></p>
+</blockquote>
+<br>
+<br>
+<p>FSOP</p>
+<p>伪造<code class='code-inline'>_IO_list_all</code>结构中的<code class='code-inline'>jump_table[3</code>为目标函数并预先布置好参数，修改堆结构使得malloc时出错，从而调用<code class='code-inline'>_IO_flush_all_lockp</code>，进而在该函数中调用<code class='code-inline'>_IO_OVERFLOW</code>（即jump_table[3]）</p>
+<br>
+<p>jump_table = base_address+sizeof(_IO_FILE)	 0xd8</p>
+<br>
+<p>glibc2.26开始失效。</p>
+<p>glibc2.24开始添加对<code class='code-inline'>_IO_FILE.vtable</code>的检查：</p>
+<pre><code class='code-multiline'>libio: Implement vtable verification [BZ #20191]
+
+This commit puts all libio vtables in a dedicated, read-only ELF
+section, so that they are consecutive in memory.  Before any indirect
+jump, the vtable pointer is checked against the section boundaries,
+and the process is terminated if the vtable pointer does not fall into
+the special ELF section.
+
+To enable backwards compatibility, a special flag variable
+(_IO_accept_foreign_vtables), protected by the pointer guard, avoids
+process termination if libio stream object constructor functions have
+been called earlier.  Such constructor functions are called by the GCC
+2.95 libstdc++ library, and this mechanism ensures compatibility with
+old binaries.  Existing callers inside glibc of these functions are
+adjusted to call the original functions, not the wrappers which enable
+vtable compatiblity.
+
+The compatibility mechanism is used to enable passing FILE * objects
+across a static dlopen boundary, too.</code></pre>
+<p><br></p>
+<pre><code class='code-multiline'>The House of Orange uses an overflow in the heap to corrupt the _IO_list_all pointer
+  It requires a leak of the heap and the libc</code></pre>
+<p><br></p>
+<br>
+<h2>house of lore</h2>
+<p><span class='hashtag'>#smallbin_corruption</span></p>
+<blockquote>
+<p>条件：</p>
+</blockquote>
+<br>
+<br>
+<pre><code class='code-multiline' lang='c'><span class="sf_code_keyword">else</span>
+    <span class="sf_code_punctuation">{</span>
+      bck <span class="sf_code_operator">=</span> victim<span class="sf_code_operator">-&gt;</span>bk<span class="sf_code_punctuation">;</span>
+    <span class="sf_code_keyword">if</span> <span class="sf_code_punctuation">(</span><span class="sf_code_function">__glibc_unlikely</span> <span class="sf_code_punctuation">(</span>bck<span class="sf_code_operator">-&gt;</span>fd <span class="sf_code_operator">!=</span> victim<span class="sf_code_punctuation">)){</span>
+
+                  errstr <span class="sf_code_operator">=</span> <span class="sf_code_string">"malloc(): smallbin double linked list corrupted"</span><span class="sf_code_punctuation">;</span>
+                  <span class="sf_code_keyword">goto</span> errout<span class="sf_code_punctuation">;</span>
+                <span class="sf_code_punctuation">}</span>
+
+       <span class="sf_code_function">set_inuse_bit_at_offset</span> <span class="sf_code_punctuation">(</span>victim<span class="sf_code_punctuation">,</span> nb<span class="sf_code_punctuation">);</span>
+       bin<span class="sf_code_operator">-&gt;</span>bk <span class="sf_code_operator">=</span> bck<span class="sf_code_punctuation">;</span>
+       bck<span class="sf_code_operator">-&gt;</span>fd <span class="sf_code_operator">=</span> bin<span class="sf_code_punctuation">;</span>
+
+       <span class="sf_code_punctuation">[</span> <span class="sf_code_punctuation">...</span> <span class="sf_code_punctuation">]</span></code></pre>
+<p><br></p>
+<br>
+<p>*victim = malloc(0x100)</p>
+<br>
+<br>
+<p><img src='../assets/2018-10/heap1-10.png'></p>
+<br>
+<br>
+<br>
+<br>
+<p>malloc(1000)		防止free(victim)时，victim和top chunk合并</p>
+<p>free(victim)</p>
+<p>*p2 = malloc(1200)</p>
+<br>
+<p>vul here:</p>
+<p>overwrite <code class='code-inline'>victim-&gt;bk</code>=<code class='code-inline'>fake chunk 1 header</code></p>
+<br>
+<p>	</p>
+<p><img src='../assets/2018-10/heap1-11.png'></p>
+<br>
+<br>
+<br>
+<p>*p3 = malloc(100)	与p1等大小</p>
+<br>
+<p>fd [ <code class='code-inline'>victim</code> <———> <code class='code-inline'>fake chunk 1</code> <———> <code class='code-inline'>fake chunk 2</code> ] bk</p>
+<br>
+<br>
+<p>*p4 = malloc(100)</p>
+<br>
+<h2>reference</h2>
+<p><a href="https://github.com/shellphish/how2heap">shellphish-how2heap</a></p>
+
+        </div>
+        <script type="text/javascript">
+            (function() {
+
+    var doc_ols = document.getElementsByTagName("ol");
+
+    for ( i=0; i<doc_ols.length; i++) {
+
+        var ol_start = doc_ols[i].getAttribute("start") - 1;
+        doc_ols[i].setAttribute("style", "counter-reset:ol " + ol_start + ";");
+
+    }
+
+})();
+        </script>
+        <style>
+            html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td,article,aside,canvas,details,embed,figure,figcaption,footer,header,hgroup,menu,nav,output,ruby,section,summary,time,mark,audio,video{margin:0;padding:0;border:0;font:inherit;font-size:100%;vertical-align:baseline}html{line-height:1}ol,ul{list-style:none}table{border-collapse:collapse;border-spacing:0}caption,th,td{text-align:left;font-weight:normal;vertical-align:middle}q,blockquote{quotes:none}q:before,q:after,blockquote:before,blockquote:after{content:"";content:none}a img{border:none}article,aside,details,figcaption,figure,footer,header,hgroup,main,menu,nav,section,summary{display:block}*{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}html{font-size:87.5%;line-height:1.57143em}html{font-size:14px;line-height:1.6em;-webkit-text-size-adjust:100%}body{background:#fcfcfc;color:#545454;text-rendering:optimizeLegibility;font-family:"AvenirNext-Regular"}a{color:#de4c4f;text-decoration:none}h1{font-family:"AvenirNext-Medium";color:#333;font-size:1.6em;line-height:1.3em;margin-bottom:.78571em}h2{font-family:"AvenirNext-Medium";color:#333;font-size:1.3em;line-height:1em;margin-bottom:.62857em}h3{font-family:"AvenirNext-Medium";color:#333;font-size:1.15em;line-height:1em;margin-bottom:.47143em}p{margin-bottom:1.57143em;hyphens:auto}hr{height:1px;border:0;background-color:#dedede;margin:-1px auto 1.57143em auto}ul,ol{margin-bottom:.31429em}ul ul,ul ol,ol ul,ol ol{margin-bottom:0px}ol li:before{content:counter(ol) ".";counter-increment:ol;color:#e06e73;text-align:right;display:inline-block;min-width:1em;margin-right:0.5em}b,strong{font-family:"AvenirNext-Bold"}i,em{font-family:"AvenirNext-Italic"}code{font-family:"Menlo-Regular"}.text-overflow-ellipsis{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sf_code_string,.sf_code_selector,.sf_code_attr-name,.sf_code_char,.sf_code_builtin,.sf_code_inserted{color:#D33905}.sf_code_comment,.sf_code_prolog,.sf_code_doctype,.sf_code_cdata{color:#838383}.sf_code_number,.sf_code_boolean{color:#0E73A2}.sf_code_keyword,.sf_code_atrule,.sf_code_rule,.sf_code_attr-value,.sf_code_function,.sf_code_class-name,.sf_code_class,.sf_code_regex,.sf_code_important,.sf_code_variable,.sf_code_interpolation{color:#0E73A2}.sf_code_property,.sf_code_tag,.sf_code_constant,.sf_code_symbol,.sf_code_deleted{color:#1B00CE}.sf_code_macro,.sf_code_entity,.sf_code_operator,.sf_code_url{color:#920448}.note-wrapper{max-width:46em;margin:0px auto;padding:1.57143em 3.14286em}.note-wrapper.spotlight-preview{overflow-x:hidden}u{text-decoration:none;background-image:linear-gradient(to bottom, rgba(0,0,0,0) 50%,#e06e73 50%);background-repeat:repeat-x;background-size:2px 2px;background-position:0 1.05em}s{color:#878787}p{margin-bottom:0.1em}hr{margin-bottom:0.7em;margin-top:0.7em}ul li{text-indent:-0.35em}ul li:before{content:"•";color:#e06e73;display:inline-block;margin-right:0.3em}ul ul{margin-left:1.25714em}ol li{text-indent:-1.45em}ol ol{margin-left:1.25714em}blockquote{display:block;margin-left:-1em;padding-left:0.8em;border-left:0.2em solid #e06e73}.todo-list ul{margin-left:1.88571em}.todo-list li{text-indent:-1.75em}.todo-list li:before{content:"";display:static;margin-right:0px}.todo-checkbox{text-indent:-1.7em}.todo-checkbox svg{margin-right:0.3em;position:relative;top:0.2em}.todo-checkbox svg #check{display:none}.todo-checkbox.todo-checked #check{display:inline}.todo-checkbox.todo-checked .todo-text{text-decoration:line-through;color:#878787}.code-inline{display:inline;background:white;border:solid 1px #dedede;padding:0.2em 0.5em;font-size:0.9em}.code-multiline{display:block;background:white;border:solid 1px #dedede;padding:0.7em 1em;font-size:0.9em;overflow-x:auto}.hashtag{display:inline-block;color:white;background:#b8bfc2;padding:0.0em 0.5em;border-radius:1em;text-indent:0}.hashtag a{color:#fff}.address a{color:#545454;background-image:linear-gradient(to bottom, rgba(0,0,0,0) 50%,#0da35e 50%);background-repeat:repeat-x;background-size:2px 2px;background-position:0 1.05em}.address svg{position:relative;top:0.2em;display:inline-block;margin-right:0.2em}.color-preview{display:inline-block;width:1em;height:1em;border:solid 1px rgba(0,0,0,0.3);border-radius:50%;margin-right:0.1em;position:relative;top:0.2em;white-space:nowrap}.color-code{margin-right:0.2em;font-family:"Menlo-Regular";font-size:0.9em}.color-hash{opacity:0.4}.ordered-list-number{color:#e06e73;text-align:right;display:inline-block;min-width:1em}.arrow svg{position:relative;top:0.08em;display:inline-block;margin-right:0.15em;margin-left:0.15em}.arrow svg #rod{stroke:#545454}.arrow svg #point{fill:#545454}mark{color:inherit;display:inline;padding:0.2em 0.5em;background-color:#fcffc0}img{max-width:100%;height:auto}
+
+        </style>
+    </body>
+</html>

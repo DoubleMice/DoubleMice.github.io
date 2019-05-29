@@ -1,3 +1,7 @@
+---
+tags:
+- kernel
+---
 # linux 内核调试环境搭建
 > 目标：用qemu启动编译的指定版本的linux内核，启动的时候等待gdb远程调试连接，gdb加载内核符号文件vmlinux对内核进行调试。  
 
